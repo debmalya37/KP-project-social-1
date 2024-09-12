@@ -5,19 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>URL Info Fetcher</title>
     <link rel="stylesheet" href="styles.css">
+   
 </head>
 <body>
     <div class="container">
-        <h1>Fetch User Info from Facebook/YouTube URL</h1>
+        <h1>Fetch User Info from Facebook, YouTube, or Twitter URLs</h1>
         <form id="urlForm">
-            <label for="urlInput">Enter a Facebook or YouTube URL:</label>
-            <input type="text" id="urlInput" placeholder="Enter URL here" required>
+            <label for="urlInput">Enter URLs (one per line):</label>
+            <textarea id="urlInput" rows="6" placeholder="Enter URLs here" required></textarea>
             <button type="submit">Fetch Info</button>
         </form>
 
-        <div id="result"></div>
+        <div id="result">
+            <!-- Main result table -->
+            <table id="resultTable">
+                <thead>
+                    <tr>
+                        <th>Platform</th>
+                        <th>Title/Name</th>
+                        <th>Channel/User ID</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <!-- Repeated names table -->
+            <div id="repeatedSection" style="display:none;">
+                <h2>Repeated Channel/UserID (>= 10 times)</h2>
+                <table id="repeatedTable">
+                    <thead>
+                        <tr>
+                            <th>Channel/UserID</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <button id="downloadBtn" style="display:none;">Download Excel</button>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
