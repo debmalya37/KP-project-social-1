@@ -38,6 +38,9 @@ button {
 button:hover {
     background-color: #218838;
 }
+.bold {
+    font-weight: bold;
+}
 
 #result {
     margin-top: 20px;

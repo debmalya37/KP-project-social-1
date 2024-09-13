@@ -9,20 +9,18 @@ document.getElementById('urlForm').addEventListener('submit', async function (e)
 
     const results = [];
     const nameCount = {};
-    const repeatedResults = []; // Store repeated names
+    const channelCount = {}; // To count occurrences in Channel/User ID
+    const repeatedResults = [];
 
     for (const url of urls) {
         let rowData = null;
         if (url.includes('facebook.com')) {
-            // Handle Facebook URL
             rowData = await handleFacebookURL(url);
             if (rowData) rowData.platform = 'Facebook';
         } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
-            // Handle YouTube URL
             rowData = await handleYouTubeURL(url);
             if (rowData) rowData.platform = 'YouTube';
         } else if (url.includes('twitter.com') || url.includes('x.com')) {
-            // Handle Twitter URL
             rowData = handleTwitterURL(url);
             if (rowData) rowData.platform = 'Twitter';
         }
@@ -31,26 +29,40 @@ document.getElementById('urlForm').addEventListener('submit', async function (e)
             results.push(rowData);
 
             // Count occurrences of names/titles
-            const nameKey = rowData.title || rowData.name;
+            const nameKey = rowData.title || rowData.name || rowData.channel || rowData.userId;
             if (!nameCount[nameKey]) {
                 nameCount[nameKey] = 1;
             } else {
                 nameCount[nameKey]++;
             }
 
-            // Add to repeated results if occurrences >= 10
-            if (nameCount[nameKey] >= 10 && !repeatedResults.includes(nameKey)) {
+            // Count occurrences in Channel/User ID
+            const channelKey = rowData.channel || rowData.userId;
+            if (!channelCount[channelKey]) {
+                channelCount[channelKey] = 1;
+            } else {
+                channelCount[channelKey]++;
+            }
+
+            // Add to repeated results if occurrences >= 5 (for both Title/Name and Channel/User ID)
+            if ((nameCount[nameKey] >= 5 || channelCount[channelKey] >= 5) && !repeatedResults.includes(nameKey)) {
                 repeatedResults.push(nameKey);
-                const repeatedRow = `<tr><td>${nameKey}</td></tr>`;
+                const repeatedRow = `<tr><td>${nameKey} (${nameCount[nameKey]})</td></tr>`;
                 repeatedTableBody.insertAdjacentHTML('beforeend', repeatedRow);
             }
 
-            // Apply red class if occurrences >= 10
-            const nameClass = nameCount[nameKey] >= 10 ? 'red' : '';
-            const row = `<tr class="${nameClass}">
+            // Modify the name and channel to include the count if occurrences > 1
+            const nameWithCount = nameCount[nameKey] > 1 ? `${nameKey} (${nameCount[nameKey]})` : nameKey;
+            const channelWithCount = channelCount[channelKey] > 1 ? `${channelKey} (${channelCount[channelKey]})` : channelKey;
+
+            // Apply bold and red class if occurrences >= 5 for either Title/Name or Channel/User ID
+            const isRepeated = nameCount[nameKey] >= 5 || channelCount[channelKey] >= 5;
+            const nameClass = isRepeated ? 'bold red' : '';
+
+            const row = `<tr>
                 <td>${rowData.platform}</td>
-                <td>${rowData.title || rowData.name}</td>
-                <td>${rowData.channel || rowData.userId}</td>
+                <td class="${nameClass}">${nameWithCount}</td>
+                <td class="${nameClass}">${channelWithCount}</td>
             </tr>`;
             resultTableBody.insertAdjacentHTML('beforeend', row);
         }
@@ -59,7 +71,7 @@ document.getElementById('urlForm').addEventListener('submit', async function (e)
     // If there are results, show the download button
     if (results.length > 0) {
         document.getElementById('downloadBtn').style.display = 'inline-block';
-        document.getElementById('downloadBtn').onclick = () => downloadExcel(results, repeatedResults, nameCount);
+        document.getElementById('downloadBtn').onclick = () => downloadExcel(results, repeatedResults, nameCount, channelCount);
     }
 
     // Show repeated names table only if there are repeated names
@@ -69,7 +81,6 @@ document.getElementById('urlForm').addEventListener('submit', async function (e)
         document.getElementById('repeatedSection').style.display = 'none';
     }
 });
-
 // Function to handle Facebook URL parsing and API call
 async function handleFacebookURL(url) {
     const userInfo = extractFacebookInfo(url);
@@ -148,40 +159,69 @@ function extractTwitterInfo(url) {
     return null;
 }
 
-// Download data as Excel with red highlighting for repeated names
-function downloadExcel(data, repeatedData, nameCount) {
-    const workbook = XLSX.utils.book_new();
+// Download data as Excel with bold and red highlighting for repeated names
+// Function to download the Excel file with counts in name fields and channel fields
+async function downloadExcel(data, repeatedData, nameCount, channelCount) {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Main Results');
 
-    // Create the data with additional styling for colors
-    const formattedData = data.map((row, index) => {
-        const nameKey = row.title || row.name;
-        const isRed = nameCount[nameKey] >= 10;
-        const platformCell = { v: row.platform };
-        const titleCell = { v: row.title || row.name, s: { fill: { fgColor: { rgb: "DCEFFF" } } } }; // Light blue
-        const channelCell = {
-            v: row.channel || row.userId,
-            s: { fill: { fgColor: { rgb: "FFD966" } } }, // Orangish-yellow background
+    // Set the header row with styling
+    worksheet.columns = [
+        { header: 'Platform', key: 'platform', width: 15 },
+        { header: 'Title/Name', key: 'title', width: 30 },
+        { header: 'Channel/User ID', key: 'channel', width: 30 }
+    ];
+
+    // Add rows with correct cell styling and counts
+    data.forEach(row => {
+        const nameKey = row.title || row.name || row.channel || row.userId;
+        const channelKey = row.channel || row.userId;
+        const isRepeated = nameCount[nameKey] >= 5 || channelCount[channelKey] >= 5;
+
+        // Modify the name and channel to include the count if occurrences > 1
+        const nameWithCount = nameCount[nameKey] > 1 ? `${nameKey} (${nameCount[nameKey]})` : nameKey;
+        const channelWithCount = channelCount[channelKey] > 1 ? `${channelKey} (${channelCount[channelKey]})` : channelKey;
+
+        // Insert row data
+        const insertedRow = worksheet.addRow({
+            platform: row.platform,
+            title: nameWithCount,
+            channel: channelWithCount
+        });
+
+        // Apply styles
+        insertedRow.getCell('title').fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'DCEFFF' } // Light blue background for 'Title/Name'
         };
 
-        if (isRed) {
-            // If the name/channel is repeated >= 10 times, make the title red
-            titleCell.s.font = { color: { rgb: "FF0000" } }; // Red text
-        }
+        insertedRow.getCell('channel').fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFD966' } // Orangish-yellow background for 'Channel/User ID'
+        };
 
-        return [platformCell, titleCell, channelCell];
+        // Apply bold and red font if name is repeated 5 or more times
+        if (isRepeated) {
+            insertedRow.getCell('title').font = { color: { argb: 'FF0000' }, bold: true }; // Red and bold text for repeated names
+            insertedRow.getCell('channel').font = { color: { argb: 'FF0000' }, bold: true }; // Red and bold text for repeated Channel/User ID
+        }
     });
 
-    // Create worksheet with styled data
-    const worksheet = XLSX.utils.aoa_to_sheet([["Platform", "Title/Name", "Channel/User ID"], ...formattedData]);
+    // Add a new worksheet for repeated names
+    const repeatedSheet = workbook.addWorksheet('Repeated Names');
+    repeatedSheet.columns = [{ header: 'Channel/User ID', key: 'channel', width: 30 }];
+    repeatedData.forEach(name => {
+        const repeatedRow = repeatedSheet.addRow({ channel: `${name} (${nameCount[name]})` });
+        repeatedRow.getCell('channel').font = { color: { argb: 'FF0000' }, bold: true }; // Red and bold text for repeated names
+    });
 
-    // Append the worksheet to the workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Main Results');
-
-    // Create a sheet for repeated names
-    const repeatedSheetData = repeatedData.map((name) => [{ v: name, s: { font: { color: { rgb: "FF0000" } } } }]); // Red text for repeated names
-    const repeatedSheet = XLSX.utils.aoa_to_sheet([["Channel/User ID"], ...repeatedSheetData]);
-    XLSX.utils.book_append_sheet(workbook, repeatedSheet, 'Repeated Names');
-
-    // Write the Excel file with applied styles
-    XLSX.writeFile(workbook, 'url_info.xlsx');
+    // Export the Excel file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'url_info.xlsx';
+    link.click();
 }
