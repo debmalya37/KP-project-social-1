@@ -150,27 +150,38 @@ function extractTwitterInfo(url) {
 
 // Download data as Excel with red highlighting for repeated names
 function downloadExcel(data, repeatedData, nameCount) {
-    const combinedData = data.map(row => {
+    const workbook = XLSX.utils.book_new();
+
+    // Create the data with additional styling for colors
+    const formattedData = data.map((row, index) => {
         const nameKey = row.title || row.name;
         const isRed = nameCount[nameKey] >= 10;
-        return {
-            Platform: row.platform,
-            Title_Name: isRed ? `**${row.title || row.name}**` : row.title || row.name,
-            Channel_UserID: row.channel || row.userId
+        const platformCell = { v: row.platform };
+        const titleCell = { v: row.title || row.name, s: { fill: { fgColor: { rgb: "DCEFFF" } } } }; // Light blue
+        const channelCell = {
+            v: row.channel || row.userId,
+            s: { fill: { fgColor: { rgb: "FFD966" } } }, // Orangish-yellow background
         };
+
+        if (isRed) {
+            // If the name/channel is repeated >= 10 times, make the title red
+            titleCell.s.font = { color: { rgb: "FF0000" } }; // Red text
+        }
+
+        return [platformCell, titleCell, channelCell];
     });
 
-    // Create a worksheet for the main result
-    const resultSheet = XLSX.utils.json_to_sheet(combinedData);
+    // Create worksheet with styled data
+    const worksheet = XLSX.utils.aoa_to_sheet([["Platform", "Title/Name", "Channel/User ID"], ...formattedData]);
 
-    // Create a worksheet for the repeated names
-    const repeatedSheet = XLSX.utils.json_to_sheet(repeatedData.map(name => ({ 'Channel/UserID': name })));
+    // Append the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Main Results');
 
-    // Create a workbook
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, resultSheet, 'Main Results');
+    // Create a sheet for repeated names
+    const repeatedSheetData = repeatedData.map((name) => [{ v: name, s: { font: { color: { rgb: "FF0000" } } } }]); // Red text for repeated names
+    const repeatedSheet = XLSX.utils.aoa_to_sheet([["Channel/User ID"], ...repeatedSheetData]);
     XLSX.utils.book_append_sheet(workbook, repeatedSheet, 'Repeated Names');
 
-    // Write the Excel file
+    // Write the Excel file with applied styles
     XLSX.writeFile(workbook, 'url_info.xlsx');
 }

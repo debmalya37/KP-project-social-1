@@ -9,29 +9,25 @@ body {
     align-items: center;
     height: 100vh;
 }
+
 .container {
     background-color: white;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     text-align: center;
-    max-width: 400px;
+    max-width: 800px;
 }
 
-form {
-    margin-bottom: 20px;
-}
-
-input[type="text"] {
+textarea {
     width: 100%;
     padding: 10px;
-    margin: 10px 0;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    margin-bottom: 10px;
 }
 
 button {
-    padding: 10px 20px;
+    padding: 10px 15px;
+    margin-bottom: 20px;
     background-color: #28a745;
     color: white;
     border: none;
@@ -47,48 +43,51 @@ button:hover {
     margin-top: 20px;
     font-size: 16px;
     color: #333;
-}
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-textarea {
-    width: 100%;
+    max-height: 300px;
+    overflow-y: scroll;
+    border: 1px solid #ddd;
     padding: 10px;
-    margin-bottom: 10px;
 }
 
-button {
-    padding: 10px 15px;
-    margin-bottom: 20px;
-}
-
-#resultTable, #repeatedTable {
+/* Table styling */
+#resultTable {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
+    background-color: #dcefff; /* Light blue background for the table */
 }
 
-#resultTable th, #resultTable td, #repeatedTable th, #repeatedTable td {
+#resultTable th, #resultTable td {
     padding: 10px;
     border-bottom: 1px solid #ccc;
     text-align: left;
 }
 
-#resultTable th, #repeatedTable th {
+#resultTable th {
+    background-color: #b0d4f1; /* Slightly darker blue for headers */
+}
+
+#resultTable td:nth-child(3) {
+    background-color: #ffd966; /* Orangish-yellow background for Channel/User ID column */
+}
+
+/* Styling for repeated section */
+#repeatedTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+#repeatedTable th, #repeatedTable td {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    text-align: left;
+}
+
+#repeatedTable th {
     background-color: #f2f2f2;
 }
 
 .red {
-    color: red;
-}
-
-#result {
-    max-height: 300px;
-    overflow-y: scroll;
-    margin-top: 20px;
-    border: 1px solid #ddd;
-    padding: 10px;
+    color: red; /* Text will turn red for repeated entries */
 }
